@@ -71,12 +71,12 @@ def get_report_text(id):
 
     # Подстановка значений в шаблон
     report_text = (f"""
-    Заявка: {request_id_num}
-    Рабочее задание: {task_id}
-    Приоритет: {priority}
-    Пришла: {received_time}
-    Принята: {received_time}
-    Закрыта: 
+Заявка: {request_id_num}
+Рабочее задание: {task_id}
+Приоритет: {priority}
+Пришла: {received_time}
+Принята: {received_time}
+Закрыта: 
     """)
 
     # Сохранение отчета в файл
