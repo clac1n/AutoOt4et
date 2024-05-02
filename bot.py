@@ -1,5 +1,4 @@
 import telebot
-from script import server, get_report_text
 
 # Токен бота
 bot_token = '***'
