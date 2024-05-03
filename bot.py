@@ -1,4 +1,6 @@
 import telebot
+import re
+#from script import server, get_report_text
 
 # Токен бота
 bot_token = '***'
@@ -6,10 +8,10 @@ bot_token = '***'
 # Создание экземпляра бота
 bot = telebot.TeleBot(bot_token)
 
-# Обработчик команды /report_start
-@bot.message_handler(commands=['report_start'])
-def start_report(message):
-    request_id_num = message.text.split()[1]
+# Обработчик сообщений
+@bot.message_handler(func=lambda message: True)
+def handle_message(message):
+    request_id_num = message.text
     report_text = get_report_from_file(request_id_num)
 
     if report_text:
@@ -18,6 +20,7 @@ def start_report(message):
         bot.send_message(message.chat.id, f'Отчет для заявки {request_id_num} не найден.')
 
 # Функция для получения отчета из файла
+
 def get_report_from_file(request_id_num):
     with open('report.txt', 'r') as f:
         for line in f:
