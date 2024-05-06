@@ -26,6 +26,8 @@ def get_report_from_file(request_id_num):
         for line in f:
             if line.startswith('Заявка: ') and request_id_num in line:
                 report_text = ''
+                matching_line = line
+                report_text += f"{matching_line.strip()}\n"
                 for next_line in f:
                     if next_line.startswith('Заявка: '):
                         break
