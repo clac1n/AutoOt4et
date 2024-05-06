@@ -3,6 +3,7 @@ import quopri
 from datetime import datetime
 import re
 import time
+import os
 
 # IMAP4 сервер
 imap_server = '***'
@@ -90,3 +91,32 @@ def save_report_to_file(report_text):
     with open('report.txt', 'a') as f:
         f.write(report_text)
         f.write('\n\n')
+
+def clear_report_file():
+    # Проверка времени
+    now = datetime.now()
+    if now.hour == 20 and now.minute == 0:
+        # Очистка файла
+        try:
+            os.remove('report.txt')
+            print("Файл report.txt очищен.")
+        except FileNotFoundError:
+            print("Файл report.txt не найден.")
+
+while True:
+    try:
+        # Получение новых писем
+        response, data = server.uid('search', 'ALL')
+        new_ids = data[0].split()
+
+        # Обработка каждого нового письма
+        for id in new_ids:
+            get_report_text(id)
+            server.uid('STORE', id, '+FLAGS', '\\Seen')
+
+    except Exception as e:
+        print(f"Ошибка: {e}")
+        # Запись ошибки в лог-файл
+    save_report_to_file(report_text)
+    clear_report_file()
+    time.sleep(15)
