@@ -31,6 +31,9 @@ def get_report_from_file(request_id_num, chat_id):
         matching_line = line
         report_text += f"{matching_line.rstrip()}\n"
         for next_line in f:
+          # Остановка обработки после следующей "Заявка:"
+          if next_line.startswith('Заявка: '):
+            break
           # Проверка, начинается ли строка с "Закрыта:"
           if next_line.startswith('Закрыта: '):
             # Извлечение существующего текста "Закрыта:"
