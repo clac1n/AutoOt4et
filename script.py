@@ -5,118 +5,118 @@ import re
 import time
 import os
 
-# IMAP4 сервер
-imap_server = '***'
 
-# Логин и пароль
-username = '***'
-password = '***'
+class ReportGenerator:
+    def __init__(self, imap_server, username, password):
+        self.imap_server = imap_server
+        self.username = username
+        self.password = password
 
-# Подключение к серверу
-server = imaplib.IMAP4_SSL(imap_server)
-server.login(username, password)
+        self.connect_to_server()
+        print(1)
+    def connect_to_server(self):
+        self.server = imaplib.IMAP4_SSL(self.imap_server)
+        self.server.login(self.username, self.password)
+        self.server.select('support')
+        print(2)
+    def get_report_text(self, id):
+        # Получение темы письма
+        subject = self.server.fetch(id, '(BODY.PEEK[HEADER.FIELDS (SUBJECT)])')[1][0][1].strip()
+        subject = quopri.decodestring(subject.decode('utf-8')).decode('utf-8')
+        print(3)
+        # Поиск информации в теле письма
+        body = self.server.fetch(id, '(RFC822)')[1][0][1]
+        body = body.decode('utf-8')
 
-# Выбор папки "Входящие"
-server.select('support')
+        # Заявка
+        request_id_num = None
+        try:
+            request_id_num = re.findall(r">(?<!\d)\d{7}(?!\d)<", body)[0]
+        except IndexError:
+            request_id_num = "Не определено"
 
-def get_report_text(id):
-    # Получение темы письма
-    subject = server.fetch(id, '(BODY.PEEK[HEADER.FIELDS (SUBJECT)])')[1][0][1].strip()
-    subject = quopri.decodestring(subject.decode('utf-8')).decode('utf-8')
+        # Рабочее задание
+        task_id = None
+        try:
+            task_id= re.findall(r'>(?<!\d)\d{8}(?!\d)<', body)[0]
+        except IndexError:
+            task_id = "Не определено"
 
-    # Поиск информации в теле письма
-    body = server.fetch(id, '(RFC822)')[1][0][1]
-    body = body.decode('utf-8')
+        # Приоритет
+        priority = None
+        try:
+            priority = re.findall(r'\s\d\s-', body)[0]
+        except IndexError:
+            priority = "Не определено"
 
-    # Заявка
-    request_id_num = None
-    try:
-        request_id_num = re.findall(r">(?<!\d)\d{7}(?!\d)<", body)[0]
-    except IndexError:
-        request_id_num = "Не определено"
+        # Время получения письма
+        received_time = None
+        try:
+            received_time = re.findall(r'\s\d{2}:\d{2}', body)[0]
+        except IndexError:
+            received_time = "Не определено"
 
-    # Рабочее задание
-    task_id = None
-    try:
-        task_id= re.findall(r'>(?<!\d)\d{8}(?!\d)<', body)[0]
-    except IndexError:
-        task_id = "Не определено"
+        if "1" in priority:
+            priority = "1 - Критический"
+        elif "2" in priority:
+            priority = "2 - Высокий"
+        elif "3" in priority:
+            priority = "3 - Средний"
+        elif "4" in priority:
+            priority = "4 - Низкий"
+        else:
+            priority = "Не найдено"
 
-    # Приоритет
-    priority = None
-    try:
-        priority = re.findall(r'\s\d\s-', body)[0]
-    except IndexError:
-        priority = "Не определено"
+        request_id_num = request_id_num.replace(">", "").replace("<", "")
+        task_id = task_id.replace(">", "").replace("<","")
 
-    # Время получения письма
-    received_time = None
-    try:
-        received_time = re.findall(r'\s\d{2}:\d{2}', body)[0]
-    except IndexError:
-        received_time = "Не определено"
-
-    if "1" in priority:
-        priority = "1 - Критический"
-    elif "2" in priority:
-        priority = "2 - Высокий"
-    elif "3" in priority:
-        priority = "3 - Средний"
-    elif "4" in priority:
-        priority = "4 - Низкий"
-    else:
-        priority = "Не найдено"
-
-    request_id_num = request_id_num.replace(">", "").replace("<", "")
-    task_id = task_id.replace(">", "").replace("<","")
-
-    # Подстановка значений в шаблон
-    report_text = (f"""
+        # Подстановка значений в шаблон
+        report_text = f"""
 Заявка: {request_id_num}
 Рабочее задание: {task_id}
 Приоритет: {priority}
-Пришла: {received_time}
-Принята: {received_time}
-Закрыта: 
-    """)
+Пришла:{received_time}
+Принята:{received_time}
+Закрыта: 
+"""
+        time.sleep(15)
+        return report_text
 
-    # Сохранение отчета в файл
-    save_report_to_file(report_text)
+    def save_report_to_file(self, report_text):
+        with open('report.txt', 'a') as f:
+            f.write(report_text)
+            f.write('\n\n')
 
-    time.sleep(15)
+    def clear_report_file(self):
+        now = datetime.now()
+        if now.hour == 20 and now.minute == 0:
+            try:
+                os.remove('report.txt')
+                print("Файл report.txt очищен.")
+            except FileNotFoundError:
+                print("Файл report.txt не найден.")
 
-    return report_text
+    def run(self):
+        while True:
+            try:
+                # Получение новых писем
+#                response, data = self.server.uid('search', 'ALL')
+                response, data = self.server.search(None, '(UNSEEN)')
+                new_ids = data[0].split()
 
-def save_report_to_file(report_text):
-    with open('report.txt', 'a') as f:
-        f.write(report_text)
-        f.write('\n\n')
+                # Обработка каждого нового письма
+                for id in new_ids:
+                    report_text = self.get_report_text(id)
+                    self.save_report_to_file(report_text)
+                    self.server.uid('STORE', id, '+FLAGS', '\\Seen')
+            except Exception as e:
+              print(f"Ошибка: {e}")
+            self.clear_report_file()
+            time.sleep(15)
+if __name__ == '__main__':
+    imap_server = '***'
+    username = '***'
+    password = '***'
 
-def clear_report_file():
-    # Проверка времени
-    now = datetime.now()
-    if now.hour == 20 and now.minute == 0:
-        # Очистка файла
-        try:
-            os.remove('report.txt')
-            print("Файл report.txt очищен.")
-        except FileNotFoundError:
-            print("Файл report.txt не найден.")
-
-while True:
-    try:
-        # Получение новых писем
-        response, data = server.uid('search', 'ALL')
-        new_ids = data[0].split()
-
-        # Обработка каждого нового письма
-        for id in new_ids:
-            get_report_text(id)
-            server.uid('STORE', id, '+FLAGS', '\\Seen')
-
-    except Exception as e:
-        print(f"Ошибка: {e}")
-        # Запись ошибки в лог-файл
-    save_report_to_file(report_text)
-    clear_report_file()
-    time.sleep(15)
+    report_generator = ReportGenerator(imap_server, username, password)
+    report_generator.run()
