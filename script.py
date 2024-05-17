@@ -13,17 +13,14 @@ class ReportGenerator:
         self.password = password
 
         self.connect_to_server()
-        print(1)
     def connect_to_server(self):
         self.server = imaplib.IMAP4_SSL(self.imap_server)
         self.server.login(self.username, self.password)
         self.server.select('support')
-        print(2)
     def get_report_text(self, id):
         # Получение темы письма
         subject = self.server.fetch(id, '(BODY.PEEK[HEADER.FIELDS (SUBJECT)])')[1][0][1].strip()
         subject = quopri.decodestring(subject.decode('utf-8')).decode('utf-8')
-        print(3)
         # Поиск информации в теле письма
         body = self.server.fetch(id, '(RFC822)')[1][0][1]
         body = body.decode('utf-8')
@@ -72,8 +69,8 @@ class ReportGenerator:
 
         # Подстановка значений в шаблон
         report_text = f"""
-Заявка: {request_id_num}
 Рабочее задание: {task_id}
+Заявка: {request_id_num}
 Приоритет: {priority}
 Пришла:{received_time}
 Принята:{received_time}
